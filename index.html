@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CPX 문진 앞글자 암기 도우미</title>
+    <!-- SheetJS CDN for Excel parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f4f6f9;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 12px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            padding: 20px 16px;
+            margin-top: 5px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #eef2f7;
+        }
+
+        h1 {
+            font-size: 1.35rem;
+            color: #1e293b;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        p.subtitle {
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+
+        .card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .file-upload-box {
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .file-upload-box:active {
+            background-color: #f1f5f9;
+            border-color: #3b82f6;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            width: 100%;
+            padding: 13px;
+            background-color: #2563eb;
+            color: white;
+            font-size: 0.98rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+            background-color: #1d4ed8;
+        }
+
+        .btn-secondary {
+            background-color: #e2e8f0;
+            color: #334155;
+            box-shadow: none;
+        }
+
+        .btn-sm {
+            padding: 7px 12px;
+            font-size: 0.8rem;
+            border-radius: 8px;
+            width: auto;
+            box-shadow: none;
+        }
+
+        .btn-success {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .btn-warning {
+            background-color: #f59e0b;
+            color: white;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+            box-shadow: none;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: #dbeafe;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .prompt-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: #0f172a;
+            text-align: center;
+            margin: 12px 0 16px 0;
+            word-break: keep-all;
+        }
+
+        .input-group {
+            margin-bottom: 14px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.85rem;
+            color: #475569;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: #2563eb;
+        }
+
+        .result-box {
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 14px;
+            animation: fadeIn 0.25s ease;
+        }
+
+        .result-correct {
+            background-color: #ecfdf5;
+            border: 1.5px solid #10b981;
+            color: #065f46;
+        }
+
+        .result-wrong {
+            background-color: #fef2f2;
+            border: 1.5px solid #f43f5e;
+            color: #9f1239;
+        }
+
+        .result-header {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .detail-row {
+            font-size: 0.9rem;
+            margin-top: 4px;
+            line-height: 1.4;
+        }
+
+        .detail-label {
+            font-weight: 600;
+            opacity: 0.8;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 14px;
+            font-size: 0.82rem;
+            color: #475569;
+            text-align: center;
+        }
+
+        .stats-item strong {
+            display: block;
+            font-size: 1.05rem;
+            color: #0f172a;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .mode-toggle {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 14px;
+        }
+
+        .mode-tab {
+            flex: 1;
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 0.82rem;
+            font-weight: 600;
+            border-radius: 8px;
+            background: #e2e8f0;
+            color: #64748b;
+            cursor: pointer;
+        }
+
+        .mode-tab.active {
+            background: #2563eb;
+            color: white;
+        }
+
+        /* DATA MANAGEMENT SECTION STYLES */
+        .mg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .mg-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        .action-bar {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .add-form-box {
+            background: #ffffff;
+            border: 1.5px solid #3b82f6;
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 14px;
+        }
+
+        .add-form-title {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: #1d4ed8;
+            margin-bottom: 8px;
+        }
+
+        .add-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .item-list-container {
+            max-height: 380px;
+            overflow-y: auto;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            background: #ffffff;
+            padding: 6px;
+        }
+
+        .item-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 6px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-checkbox {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+            accent-color: #2563eb;
+            flex-shrink: 0;
+        }
+
+        .item-inputs {
+            display: flex;
+            flex: 1;
+            gap: 6px;
+            min-width: 0;
+        }
+
+        .item-inputs input {
+            padding: 6px 8px;
+            font-size: 0.85rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 50%;
+        }
+
+        .item-inputs input:focus {
+            border-color: #2563eb;
+            background-color: #f8fafc;
+        }
+
+        .item-actions {
+            display: flex;
+            gap: 4px;
+            flex-shrink: 0;
+        }
+
+        .guide-list {
+            font-size: 0.82rem;
+            color: #475569;
+            line-height: 1.5;
+            margin-left: 16px;
+            margin-top: 6px;
+        }
+
+        .badge-select-count {
+            background: #3b82f6;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>🩺 CPX 문진 암기 도우미</h1>
+        <p class="subtitle">임상표현 앞글자 실시간 목록 관리 & 암기 테스트</p>
+    </header>
+
+    <!-- MAIN MENU TABS -->
+    <div class="mode-toggle" id="main-nav-tabs">
+        <div id="nav-quiz" class="mode-tab active" onclick="showScreen('quiz-setup')">🎯 암기 학습</div>
+        <div id="nav-manage" class="mode-tab" onclick="showScreen('manage')">⚙️ 목록 및 정답 관리 (<span id="total-badge">0</span>)</div>
+    </div>
+
+    <!-- SCREEN 1: QUIZ SETUP & LAUNCH -->
+    <div id="quiz-setup-screen">
+        <div id="loaded-info" class="card">
+            <div style="text-align:center; margin-bottom:10px;">
+                <span class="status-badge" id="data-count-badge">총 0개 중 0개 선택됨</span>
+            </div>
+            <button class="btn btn-success" style="margin-bottom:10px;" onclick="startQuiz('all')">🚀 선택한 항목으로 학습 시작</button>
+            <button class="btn btn-secondary" style="font-size:0.88rem; padding:10px;" onclick="showScreen('manage')">⚙️ 출제 범위를 선택하거나 정답 수정하기</button>
+        </div>
+
+        <div class="card">
+            <h3 style="font-size:0.95rem; margin-bottom:10px; color:#1e293b;">📁 엑셀 파일 대량 불러오기</h3>
+            <div class="file-upload-box" onclick="document.getElementById('excel-file').click();">
+                <span style="font-size:1.8rem; display:block; margin-bottom:4px;">📥</span>
+                <span style="font-size:0.9rem; color:#3b82f6; font-weight:600;">엑셀(.xlsx) 파일 선택</span>
+                <p style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">A열: 임상표현 | B열: 앞글자 정답</p>
+            </div>
+            <input type="file" id="excel-file" accept=".xlsx, .xls, .csv" onchange="handleFileUpload(event)">
+        </div>
+
+        <div class="card" style="background:#f8fafc;">
+            <h4 style="font-size:0.85rem; color:#334155;">💡 학습 팁</h4>
+            <ul class="guide-list">
+                <li><b>[목록 및 정답 관리]</b> 탭에서 각 문제의 정답을 수정하거나 원하는 단원만 체크하여 풀 수 있습니다.</li>
+                <li>한 번 업로드하거나 직접 등록한 항목은 브라우저에 자동 저장됩니다.</li>
+                <li>키보드의 <b>Enter</b> 키로 빠른 정답 제출 및 다음 문제 이동이 가능합니다.</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- SCREEN 2: DATA MANAGEMENT & RANGE SELECTION -->
+    <div id="manage-screen" class="hidden">
+        <div class="card">
+            <div class="mg-header">
+                <div class="mg-title">📋 임상표현 목록 & 범위 선택</div>
+                <span class="badge-select-count" id="selected-summary">0개 선택됨 / 총 0개</span>
+            </div>
+
+            <!-- ACTION BAR: SELECT ALL & TOGGLE ADD FORM -->
+            <div class="action-bar">
+                <button class="btn btn-sm btn-secondary" id="btn-toggle-all" onclick="toggleSelectAll()">☑️ 전체 선택 / 해제</button>
+                <button class="btn btn-sm btn-success" onclick="toggleAddForm()">➕ 새 항목 추가</button>
+                <button class="btn btn-sm btn-danger" style="margin-left:auto;" onclick="clearAllData()">🗑️ 전체 삭제</button>
+            </div>
+
+            <!-- ADD NEW ITEM FORM -->
+            <div id="add-form-box" class="add-form-box hidden">
+                <div class="add-form-title">➕ 새로운 임상표현 등록</div>
+                <div class="add-inputs">
+                    <input type="text" id="new-prompt" placeholder="임상표현 (예: 급성복통)">
+                    <input type="text" id="new-answer" placeholder="앞글자 정답 (예: 소 순호부비)">
+                    <div style="display:flex; gap:6px; margin-top:4px;">
+                        <button class="btn btn-sm btn-success" style="flex:1;" onclick="addNewItem()">저장하기</button>
+                        <button class="btn btn-sm btn-secondary" onclick="toggleAddForm()">취소</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LIST CONTAINER -->
+            <div class="item-list-container" id="item-list">
+                <!-- Dynamically populated -->
+            </div>
+
+            <div style="margin-top:14px; display:flex; gap:8px;">
+                <button class="btn btn-success" style="flex:1;" onclick="startQuizFromManage()">🚀 이 설정으로 학습 시작</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCREEN 3: QUIZ INTERFACE -->
+    <div id="quiz-screen" class="hidden">
+        <!-- MODE SELECTOR TAB -->
+        <div class="mode-toggle">
+            <div id="tab-all" class="mode-tab active" onclick="switchMode('all')">선택 범위 학습</div>
+            <div id="tab-wrong" class="mode-tab" onclick="switchMode('wrong')">오답 노트 (<span id="wrong-count-badge">0</span>)</div>
+        </div>
+
+        <!-- STATS BAR -->
+        <div class="stats-bar">
+            <div class="stats-item">출제범위<strong id="stat-total">0</strong></div>
+            <div class="stats-item">남은문제<strong id="stat-remaining">0</strong></div>
+            <div class="stats-item">맞힘<strong id="stat-correct" style="color:#10b981;">0</strong></div>
+            <div class="stats-item">틀림<strong id="stat-wrong" style="color:#ef4444;">0</strong></div>
+        </div>
+
+        <div class="card">
+            <div style="text-align:center;">
+                <span class="status-badge" id="quiz-mode-title">선택 범위 무작위 모드</span>
+            </div>
+            
+            <div class="prompt-title" id="current-prompt">임상표현</div>
+
+            <div class="input-group">
+                <label for="user-answer">외운 앞글자 입력 (띄어쓰기 없이)</label>
+                <input type="text" id="user-answer" placeholder="예: 소 순호부비" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" onkeydown="handleKeyDown(event)">
+            </div>
+
+            <button id="btn-submit" class="btn" onclick="checkAnswer()">정답 확인 (Enter)</button>
+            <button id="btn-next" class="btn btn-warning hidden" onclick="nextQuestion()">다음 문제 (Enter ↵)</button>
+        </div>
+
+        <!-- RESULT FEEDBACK CARD -->
+        <div id="result-container" class="hidden"></div>
+
+        <button class="btn btn-secondary" style="margin-top:14px;" onclick="exitQuiz()">학습 종료 및 홈으로</button>
+    </div>
+</div>
+
+<script>
+    // Global Data Structure: [{ id: number, prompt: string, answer: string, selected: boolean }]
+    let dataset = [];
+    let currentPool = [];
+    let wrongPool = [];
+    let currentItem = null;
+    let isAnswerChecked = false;
+    let currentMode = 'all';
+
+    let stats = { correct: 0, wrong: 0 };
+
+    window.onload = function() {
+        const savedData = localStorage.getItem('cpx_dataset_v2');
+        if (savedData) {
+            try {
+                dataset = JSON.parse(savedData);
+            } catch(e) {
+                dataset = [];
+            }
+        }
+        
+        // Fallback or migration from v1 if v2 empty
+        if (!dataset || dataset.length === 0) {
+            const oldData = localStorage.getItem('cpx_dataset');
+            if (oldData) {
+                try {
+                    let oldParsed = JSON.parse(oldData);
+                    dataset = oldParsed.map((item, index) => ({
+                        id: Date.now() + index,
+                        prompt: item.prompt,
+                        answer: item.answer,
+                        selected: true
+                    }));
+                    saveDataset();
+                } catch(e) {}
+            }
+        }
+
+        const savedWrong = localStorage.getItem('cpx_wrong_pool_v2');
+        if (savedWrong) {
+            try {
+                wrongPool = JSON.parse(savedWrong);
+            } catch(e) {}
+        }
+
+        updateUI();
+    };
+
+    function saveDataset() {
+        localStorage.setItem('cpx_dataset_v2', JSON.stringify(dataset));
+        updateUI();
+    }
+
+    function updateUI() {
+        const totalCount = dataset.length;
+        const selectedCount = dataset.filter(d => d.selected).length;
+
+        document.getElementById('total-badge').innerText = totalCount;
+        document.getElementById('data-count-badge').innerText = `총 ${totalCount}개 중 ${selectedCount}개 선택됨`;
+        document.getElementById('selected-summary').innerText = `${selectedCount}개 선택됨 / 총 ${totalCount}개`;
+
+        renderManageList();
+        updateWrongBadge();
+    }
+
+    function showScreen(screenName) {
+        document.getElementById('quiz-setup-screen').classList.add('hidden');
+        document.getElementById('manage-screen').classList.add('hidden');
+        document.getElementById('quiz-screen').classList.add('hidden');
+
+        document.getElementById('nav-quiz').classList.remove('active');
+        document.getElementById('nav-manage').classList.remove('active');
+
+        if (screenName === 'quiz-setup') {
+            document.getElementById('quiz-setup-screen').classList.remove('hidden');
+            document.getElementById('nav-quiz').classList.add('active');
+        } else if (screenName === 'manage') {
+            document.getElementById('manage-screen').classList.remove('hidden');
+            document.getElementById('nav-manage').classList.add('active');
+            renderManageList();
+        } else if (screenName === 'quiz') {
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('main-nav-tabs').classList.add('hidden');
+        }
+
+        if (screenName !== 'quiz') {
+            document.getElementById('main-nav-tabs').classList.remove('hidden');
+        }
+    }
+
+    // LIST RENDERER
+    function renderManageList() {
+        const listEl = document.getElementById('item-list');
+        if (!dataset || dataset.length === 0) {
+            listEl.innerHTML = '<div style="text-align:center; padding:20px; color:#94a3b8; font-size:0.85rem;">등록된 항목이 없습니다.<br>엑셀 파일을 올리거나 [➕ 새 항목 추가]로 추가해 주세요.</div>';
+            return;
+        }
+
+        let html = '';
+        dataset.forEach((item, index) => {
+            html += `
+            <div class="item-row" data-id="${item.id}">
+                <input type="checkbox" class="item-checkbox" ${item.selected ? 'checked' : ''} onchange="toggleItemSelect(${item.id}, this.checked)">
+                <div class="item-inputs">
+                    <input type="text" value="${escapeHtml(item.prompt)}" placeholder="임상표현" onchange="updateItem(${item.id}, 'prompt', this.value)">
+                    <input type="text" value="${escapeHtml(item.answer)}" placeholder="앞글자 정답" onchange="updateItem(${item.id}, 'answer', this.value)">
+                </div>
+                <div class="item-actions">
+                    <button class="btn btn-sm btn-danger" style="padding:4px 8px;" onclick="deleteItem(${item.id})">삭제</button>
+                </div>
+            </div>`;
+        });
+        listEl.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    // CHECKBOX & DATA OPERATIONS
+    function toggleItemSelect(id, checked) {
+        const target = dataset.find(d => d.id === id);
+        if (target) {
+            target.selected = checked;
+            saveDataset();
+        }
+    }
+
+    function toggleSelectAll() {
+        const allSelected = dataset.every(d => d.selected);
+        const newState = !allSelected;
+        dataset.forEach(d => d.selected = newState);
+        saveDataset();
+    }
+
+    function updateItem(id, field, value) {
+        const target = dataset.find(d => d.id === id);
+        if (target) {
+            target[field] = value.trim();
+            saveDataset();
+        }
+    }
+
+    function deleteItem(id) {
+        if (confirm('이 항목을 삭제하시겠습니까?')) {
+            dataset = dataset.filter(d => d.id !== id);
+            saveDataset();
+        }
+    }
+
+    function clearAllData() {
+        if (confirm('모든 임상표현 목록을 완전히 삭제하시겠습니까?')) {
+            dataset = [];
+            saveDataset();
+        }
+    }
+
+    function toggleAddForm() {
+        const formBox = document.getElementById('add-form-box');
+        formBox.classList.toggle('hidden');
+        if (!formBox.classList.contains('hidden')) {
+            document.getElementById('new-prompt').focus();
+        }
+    }
+
+    function addNewItem() {
+        const promptInput = document.getElementById('new-prompt');
+        const answerInput = document.getElementById('new-answer');
+
+        const promptVal = promptInput.value.trim();
+        const answerVal = answerInput.value.trim();
+
+        if (!promptVal || !answerVal) {
+            alert('임상표현과 앞글자 정답을 모두 입력해주세요.');
+            return;
+        }
+
+        dataset.unshift({
+            id: Date.now(),
+            prompt: promptVal,
+            answer: answerVal,
+            selected: true
+        });
+
+        promptInput.value = '';
+        answerInput.value = '';
+
+        saveDataset();
+        toggleAddForm();
+    }
+
+    // EXCEL FILE HANDLER
+    function handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            const firstSheetName = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheetName];
+            const json = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+
+            let newItems = [];
+            for (let i = 0; i < json.length; i++) {
+                const row = json[i];
+                if (!row || row.length < 2) continue;
+                
+                let prompt = String(row[0] || '').trim();
+                let answer = String(row[1] || '').trim();
+
+                if (i === 0 && (prompt.includes('임상표현') || answer.includes('정답') || answer.includes('앞글자'))) {
+                    continue;
+                }
+
+                if (prompt && answer) {
+                    newItems.push({
+                        id: Date.now() + i,
+                        prompt: prompt,
+                        answer: answer,
+                        selected: true
+                    });
+                }
+            }
+
+            if (newItems.length === 0) {
+                alert('엑셀 파일에서 데이터를 찾지 못했습니다.');
+                return;
+            }
+
+            dataset = newItems;
+            saveDataset();
+            alert(`총 ${newItems.length}개의 항목이 성공적으로 로드되었습니다!`);
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // QUIZ ENGINE
+    function startQuizFromManage() {
+        startQuiz('all');
+    }
+
+    function startQuiz(mode) {
+        const selectedItems = dataset.filter(d => d.selected);
+
+        if (dataset.length === 0) {
+            alert('등록된 데이터가 없습니다. 먼저 엑셀을 업로드하거나 항목을 등록해주세요!');
+            return;
+        }
+
+        if (mode === 'all' && selectedItems.length === 0) {
+            alert('선택된 항목이 없습니다! [목록 및 정답 관리]에서 출제할 항목을 체크해 주세요.');
+            showScreen('manage');
+            return;
+        }
+
+        currentMode = mode;
+        stats = { correct: 0, wrong: 0 };
+
+        if (mode === 'all') {
+            currentPool = [...selectedItems];
+        } else {
+            if (wrongPool.length === 0) {
+                alert('오답 노트에 저장된 문제가 없습니다!');
+                return;
+            }
+            currentPool = [...wrongPool];
+        }
+
+        showScreen('quiz');
+        updateTabStyles();
+        nextQuestion();
+    }
+
+    function switchMode(mode) {
+        if (mode === 'wrong' && wrongPool.length === 0) {
+            alert('오답 노트가 비어있습니다.');
+            return;
+        }
+        startQuiz(mode);
+    }
+
+    function updateTabStyles() {
+        if (currentMode === 'all') {
+            document.getElementById('tab-all').classList.add('active');
+            document.getElementById('tab-wrong').classList.remove('active');
+            document.getElementById('quiz-mode-title').innerText = '선택 범위 무작위 모드';
+        } else {
+            document.getElementById('tab-all').classList.remove('active');
+            document.getElementById('tab-wrong').classList.add('active');
+            document.getElementById('quiz-mode-title').innerText = '오답 노트 모드';
+        }
+    }
+
+    function updateStatsDisplay() {
+        const selectedCount = dataset.filter(d => d.selected).length;
+        document.getElementById('stat-total').innerText = currentMode === 'all' ? selectedCount : wrongPool.length;
+        document.getElementById('stat-remaining').innerText = currentPool.length;
+        document.getElementById('stat-correct').innerText = stats.correct;
+        document.getElementById('stat-wrong').innerText = stats.wrong;
+        updateWrongBadge();
+    }
+
+    function updateWrongBadge() {
+        document.getElementById('wrong-count-badge').innerText = wrongPool.length;
+    }
+
+    function nextQuestion() {
+        const selectedItems = dataset.filter(d => d.selected);
+
+        if (currentPool.length === 0) {
+            if (currentMode === 'all') {
+                alert('선택하신 범위의 모든 문제를 완료했습니다! 다시 무작위로 순환합니다.');
+                currentPool = [...selectedItems];
+            } else {
+                alert('오답 노트의 모든 문제를 완료했습니다!');
+                if (wrongPool.length > 0) {
+                    currentPool = [...wrongPool];
+                } else {
+                    switchMode('all');
+                    return;
+                }
+            }
+        }
+
+        const randomIndex = Math.floor(Math.random() * currentPool.length);
+        currentItem = currentPool[randomIndex];
+
+        document.getElementById('current-prompt').innerText = currentItem.prompt;
+        const inputEl = document.getElementById('user-answer');
+        inputEl.value = '';
+        inputEl.disabled = false;
+        inputEl.focus();
+
+        document.getElementById('result-container').classList.add('hidden');
+        document.getElementById('btn-submit').classList.remove('hidden');
+        document.getElementById('btn-next').classList.add('hidden');
+
+        isAnswerChecked = false;
+        updateStatsDisplay();
+    }
+
+    function handleKeyDown(event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (!isAnswerChecked) {
+                checkAnswer();
+            } else {
+                nextQuestion();
+            }
+        }
+    }
+
+    function checkAnswer() {
+        const inputEl = document.getElementById('user-answer');
+        let userVal = inputEl.value.trim().replace(/\s+/g, '');
+        let targetVal = currentItem.answer.trim().replace(/\s+/g, '');
+
+        if (!userVal) {
+            alert('외운 앞글자를 입력해주세요.');
+            inputEl.focus();
+            return;
+        }
+
+        isAnswerChecked = true;
+        inputEl.disabled = true;
+
+        const isCorrect = (userVal === targetVal);
+        const resultContainer = document.getElementById('result-container');
+        resultContainer.classList.remove('hidden');
+
+        if (isCorrect) {
+            stats.correct++;
+            resultContainer.className = 'result-box result-correct';
+            resultContainer.innerHTML = `
+                <div class="result-header">🎉 정답입니다!</div>
+                <div class="detail-row"><span class="detail-label">내 입력:</span> ${userVal}</div>
+            `;
+
+            wrongPool = wrongPool.filter(item => item.id !== currentItem.id);
+            localStorage.setItem('cpx_wrong_pool_v2', JSON.stringify(wrongPool));
+
+        } else {
+            stats.wrong++;
+            resultContainer.className = 'result-box result-wrong';
+            resultContainer.innerHTML = `
+                <div class="result-header">❌ 오답입니다</div>
+                <div class="detail-row"><span class="detail-label">내 입력:</span> <span style="text-decoration: line-through;">${userVal}</span></div>
+                <div class="detail-row"><span class="detail-label">원래 정답:</span> <strong style="color:#be123c; font-size:1.05rem;">${targetVal}</strong></div>
+            `;
+
+            if (!wrongPool.some(item => item.id === currentItem.id)) {
+                wrongPool.push(currentItem);
+                localStorage.setItem('cpx_wrong_pool_v2', JSON.stringify(wrongPool));
+            }
+        }
+
+        currentPool = currentPool.filter(item => item.id !== currentItem.id);
+
+        document.getElementById('btn-submit').classList.add('hidden');
+        document.getElementById('btn-next').classList.remove('hidden');
+        document.getElementById('btn-next').focus();
+
+        updateStatsDisplay();
+    }
+
+    function exitQuiz() {
+        showScreen('quiz-setup');
+    }
+</script>
+</body>
+</html>
